@@ -67,6 +67,8 @@ CALL ReadAvrSWAP(avrSWAP, LocalVar)
 CALL SetParameters(avrSWAP, accINFILE, SIZE(avcMSG), CntrPar, LocalVar, objInst, PerfData, ErrVar)
 CALL PreFilterMeasuredSignals(CntrPar, LocalVar, objInst)
 
+WRITE(*,*) 'iStatus = ', LocalVar%iStatus
+
 IF ((LocalVar%iStatus >= 0) .AND. (ErrVar%aviFAIL >= 0))  THEN  ! Only compute control calculations if no error has occurred and we are not on the last time step
     CALL WindSpeedEstimator(LocalVar, CntrPar, objInst, PerfData, DebugVar, ErrVar)
     CALL ComputeVariablesSetpoints(CntrPar, LocalVar, objInst)
@@ -78,7 +80,11 @@ IF ((LocalVar%iStatus >= 0) .AND. (ErrVar%aviFAIL >= 0))  THEN  ! Only compute c
     CALL YawRateControl(avrSWAP, CntrPar, LocalVar, objInst)
     CALL FlapControl(avrSWAP, CntrPar, LocalVar, objInst)
     CALL Debug(LocalVar, CntrPar, DebugVar, avrSWAP, RootName, SIZE(avcOUTNAME))
-END IF
+ELSEIF ((LocalVar%iStatus == -8) .AND. (ErrVar%aviFAIL >= 0))  THEN ! Write restart files
+    CALL WriteRestart(LocalVar, accINFILE, NINT(avrSWAP(50)))
+ELSEIF ((LocalVar%iStatus == -9) .AND. (ErrVar%aviFAIL >= 0))  THEN ! Read restart files
+    CALL ReadRestart(LocalVar, accINFILE, NINT(avrSWAP(50)))
+ENDIF
 
 ! Add RoutineName to error message
 IF (ErrVar%aviFAIL < 0) THEN
